@@ -1,59 +1,35 @@
-#include <mpi.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <malloc.h>
+#include <mpi.h>
 
-#define VEC_SIZE 15
+#define M 50
 
-int main (int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+  short int vec[M];
+  int numprocs, myid;
+  short int* res_vec = NULL;
 
-	int rank, value = 0;
-  int array[15];
   MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  for (int i = 0; i < VEC_SIZE; i++)
-    array[i] = rank;
-  
-  if (rank != 0) {
-    char buffer[1024];
-    char tmp_buf[1024];
-    snprintf(buffer, 1024, "Init data for process %d: \n", rank);
-    for(int i = 0; i < VEC_SIZE; i++) {
-      snprintf(tmp_buf, 1024, "%d ", array[i]);
-      strcat(buffer, tmp_buf);
-    }
-    strcat(buffer, "\n\n");
-    printf("%s", buffer);
-
-  }else {
-    char buffer[1024];
-    char tmp_buf[1024];
-    snprintf(buffer, 1024, "Init data for Main_process: \n");
-    for(int i = 0; i < VEC_SIZE; i++) {
-      snprintf(tmp_buf, 1024, "%d ", array[i]);
-      strcat(buffer, tmp_buf);
-    }
-    strcat(buffer, "\n\n");
-    printf("%s", buffer);
+  MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
+  MPI_Comm_rank(MPI_COMM_WORLD,&myid);
+  if (myid == 0) {
+    res_vec = (short int*)malloc(M * sizeof(short int));
   }
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  double start = MPI_Wtime();
-  MPI_Bcast(array, VEC_SIZE, MPI_INT, 0, MPI_COMM_WORLD);
-  double end = MPI_Wtime();
-
-  if (rank != 0) {
-    char buffer[1024];
-    char tmp_buf[1024];
-    snprintf(buffer, 1024, "Recieved data for process %d: \n", rank);
-    for(int i = 0; i < VEC_SIZE; i++) {
-      snprintf(tmp_buf, 1024, "%d ", array[i]);
-      strcat(buffer, tmp_buf);
-    }
-    snprintf(tmp_buf, 1024, "\nTime=%lf\n\n", end-start);
-    strcat(buffer, tmp_buf);
-    printf("%s", buffer);
+  for (size_t i = 0; i < M; i++) {
+    vec[i] = myid;//myid + rand() % 20;
+  }
+  printf("Process %d init vector:\n", myid);
+  for (size_t i = 0; i < M; i++) printf("%d ", vec[i]);
+    printf("\n\n");
+    MPI_Reduce(vec, res_vec, M, MPI_LONG, MPI_PROD, 0, MPI_COMM_WORLD);
+  if (myid == 0) {
+    printf("Process %d result vector:\n", myid);
+    for (size_t i = 0; i < M; i++) printf("%d ", res_vec[i]);
+    printf("\n\n");
+    free(res_vec);
   }
   MPI_Finalize();
-
-	return 0;
 }
