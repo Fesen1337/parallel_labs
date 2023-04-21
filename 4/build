@@ -1,0 +1,1 @@
+g++ -fopenmp 4.cpp -o 4.out
